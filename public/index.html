@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Website Status Dashboard</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+            text-align: center;
+        }
+        button {
+            font-size: 16px;
+            padding: 10px 20px;
+        }
+        .statusBox {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .status {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .up {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .down {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .error {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        .refresh-btn {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Website Status Dashboard</h1>
+        <div id="statusBox" class="statusBox"></div>
+        <button id="checkStatusBtn" class="btn btn-primary">Check Status</button>
+        <button id="autoRefreshBtn" class="btn btn-secondary refresh-btn">Auto Refresh: Off</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusBox = document.getElementById('statusBox');
+            const checkStatusBtn = document.getElementById('checkStatusBtn');
+            const autoRefreshBtn = document.getElementById('autoRefreshBtn');
+            let autoRefreshInterval = null;
+
+            const checkStatus = async () => {
+                try {
+                    const fetchStatus = async (endpoint) => {
+                        const response = await fetch(endpoint);
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    };
+
+                    const checkWebsiteStatus = await fetchStatus('/check-website-status');
+                    const checkLoginStatus = await fetchStatus('/check-login-status');
+                    // Add more fetchStatus calls for additional checks
+
+                    renderStatus(checkWebsiteStatus, 'Website');
+                    renderStatus(checkLoginStatus, 'Login');
+                    // Render additional statuses
+
+                } catch (error) {
+                    console.error('Error fetching data:', error);
+                    statusBox.innerHTML = `
+                        <div class="alert alert-danger status">
+                            Error fetching data: ${error.message}
+                        </div>
+                    `;
+                }
+            };
+
+            const renderStatus = (statusObj, title) => {
+                const statusDiv = document.createElement('div');
+                statusDiv.className = `alert ${getStatusClass(statusObj.status)} status`;
+                statusDiv.innerHTML = `
+                    <h5 class="alert-heading">${title}</h5>
+                    <hr>
+                    <p class="mb-0">${statusObj.message}</p>
+                `;
+                statusBox.appendChild(statusDiv);
+            };
+
+            const getStatusClass = (status) => {
+                if (status === 'up') return 'alert-success';
+                if (status === 'down') return 'alert-danger';
+                return 'alert-warning';
+            };
+
+            checkStatusBtn.addEventListener('click', checkStatus);
+
+            autoRefreshBtn.addEventListener('click', function() {
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                    autoRefreshBtn.textContent = 'Auto Refresh: Off';
+                } else {
+                    autoRefreshInterval = setInterval(checkStatus, 5000); // Refresh every 5 seconds
+                    autoRefreshBtn.textContent = 'Auto Refresh: On';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
